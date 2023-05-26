@@ -2,6 +2,8 @@ package db
 
 import (
 	"fmt"
+	"strconv"
+	"unit410/models"
 
 	"github.com/go-pg/pg"
 )
@@ -21,11 +23,12 @@ func NewDB() {
 func CreateAddressesTable() error {
 	query := `
 		CREATE TABLE IF NOT EXISTS Addresses (
-			UUID              UUID PRIMARY KEY,
+			UUID              UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
 			Address           TEXT,
 			Network           TEXT,
 			SignificantDigits INT,
-			Asset             TEXT
+			Asset             TEXT,
+			CONSTRAINT uc_address_asset UNIQUE (Address, Asset)
 		)
 	`
 
@@ -48,13 +51,47 @@ func CreateBalancesTable() error {
 			Delegated          TEXT,
 			Staking            TEXT,
 			Unbonding          TEXT,
-			Reward             TEXT,
+			Reward             TEXT
 		)
 	`
 
 	_, err := DB.Exec(query)
 	if err != nil {
 		return fmt.Errorf("failed to create Balances table: %v", err)
+	}
+
+	return nil
+}
+
+func AddAddress(address models.Address) error {
+	query := `
+		INSERT INTO Addresses (Address, Network, SignificantDigits, Asset)
+		VALUES ('%s', '%s', '%s', '%s')
+		ON CONFLICT (Address, Asset) DO NOTHING
+	`
+	q := fmt.Sprintf(query, address.Address, address.Network, strconv.Itoa(address.SignificantDigits), address.Asset)
+
+	fmt.Println(q)
+	_, err := DB.Exec(q)
+	if err != nil {
+		return fmt.Errorf("failed to add address: %v", err)
+	}
+
+	return nil
+}
+
+func AddBalance(asset string, balance models.Bal) error {
+	query := `
+		INSERT INTO Balances (UUID, Timestamp, Balance, Available, DelegatableVesting, Delegated, Staking, Unbonding, Reward)
+		VALUES ((SELECT UUID FROM Addresses WHERE Address = '%s' AND Asset = '%s'), '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')
+	`
+	s := balance.Timestamp.Format("2006-01-02 15:04:05")
+
+	q := fmt.Sprintf(query, balance.Address, asset, s, balance.Balance, balance.Available, balance.DelegatableVesting, balance.Delegated, balance.Staking, balance.Unbonding, balance.Reward)
+
+	_, err := DB.Exec(q)
+	if err != nil {
+		return fmt.Errorf("failed to add balance: %v", err)
 	}
 
 	return nil

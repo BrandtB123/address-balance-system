@@ -53,18 +53,16 @@ func getOsmosisBalance(address string) (string, error) {
 }
 
 func chainData(chain string) ([]*models.Bal, error) {
+	var a api.API
 	switch chain {
 	case "near":
-		api := api.NearAPI{}
-		return api.GetData()
+		a = &api.NearAPI{}
 	case "audius":
-		api := api.AudiusAPI{}
-		return api.GetData()
+		a = &api.AudiusAPI{}
 	case "osmosis":
-		api := api.OsmosisAPI{}
-		return api.GetData()
+		a = &api.OsmosisAPI{}
 	}
-	return nil, nil
+	return a.GetData()
 }
 
 func main() {
@@ -80,12 +78,18 @@ func main() {
 
 	// NEAR WORKING
 	// test := api.OsmosisAPI{}
-	// test := api.AudiusAPI{}
-	// // test := api.NearAPI{}
+	// // test := api.AudiusAPI{}
+	// // // test := api.NearAPI{}
 	// a, _ := test.GetData()
 	// fmt.Println(a)
 	db.NewDB()
-	db.CreateBalancesTable()
+
+	db.CreateAddressesTable()
+	e := db.CreateBalancesTable()
+	fmt.Println(e)
+	test := api.NearAPI{}
+
+	test.GetData()
 
 }
 

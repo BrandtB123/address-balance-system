@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"unit410/db"
 	"unit410/models"
 )
 
@@ -16,6 +17,12 @@ func (api *NearAPI) GetData() ([]*models.Bal, error) {
 	stakedBalances, _ := obtainValidatorAddresses()
 	for i, sb := range stakedBalances {
 		b, err := getAccountBalance(sb.Address)
+		db.AddAddress(models.Address{
+			Address:           sb.Address,
+			SignificantDigits: 112,
+			Network:           "NEAR",
+			Asset:             "NEAR",
+		})
 		fmt.Print(i)
 		fmt.Println(" ", b)
 		if err != nil {
@@ -23,6 +30,7 @@ func (api *NearAPI) GetData() ([]*models.Bal, error) {
 			return nil, err
 		}
 		stakedBalances[i].Balance = b.Result.Amount
+		db.AddBalance("NEAR", *stakedBalances[i])
 	}
 	fmt.Println(len(stakedBalances))
 
@@ -69,7 +77,7 @@ func obtainValidatorAddresses() ([]*models.Bal, error) {
 	fromIndex := 0
 	limit := 50
 	increment := 50
-	toIndex := 1000
+	toIndex := 100
 
 	jsonData := map[string]interface{}{
 		"from_index": fromIndex,

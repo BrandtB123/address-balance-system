@@ -14,6 +14,14 @@ type Bal struct {
 	Reward             string
 }
 
+type Address struct {
+	UUID              string
+	Address           string
+	Network           string
+	SignificantDigits int
+	Asset             string
+}
+
 type Test interface {
 	NearValidatorAccountsResponse | NearBalanceResponse |
 		AudiusResponse | OsmosisBalanceResponse |
