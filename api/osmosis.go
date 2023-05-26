@@ -31,24 +31,25 @@ func convertListToBigInt(inputs []string) string {
 }
 
 func getOsmosisBalance(address string) error {
-	a, err := HttpRequest[models.OsmosisBalanceResponse]("GET", "https://lcd.osmosis.zone/cosmos/bank/v1beta1/balances/"+address, nil)
+	osmosisBalanceResponse, err := HttpRequest[models.OsmosisBalanceResponse]("GET", "https://lcd.osmosis.zone/cosmos/bank/v1beta1/balances/"+address, nil)
 	if err != nil {
 		return err
 	}
 	var balance models.Bal
-	for _, b := range a.Balances {
+	for _, bal := range osmosisBalanceResponse.Balances {
+		asset := bal.Denom
 		balance = models.Bal{
 			Address: address,
-			Balance: b.Amount,
+			Balance: bal.Amount,
 		}
 		err = db.AddAddress(models.Address{
 			Address:           address,
 			Network:           "Osmosis",
-			SignificantDigits: 10,
-			Asset:             b.Denom,
+			SignificantDigits: 18,
+			Asset:             asset,
 		})
-		if b.Denom != "uosmo" {
-			err = db.AddBalance(b.Denom, balance)
+		if asset != "uosmo" {
+			err = db.AddBalance(asset, balance)
 			if err != nil {
 				return err
 			}
