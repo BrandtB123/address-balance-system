@@ -1,1 +1,0 @@
-{"jsonrpc":"2.0","result":{"block_hash":"2gWfLvUvGyZh98Yxu9nPhU9VVpzDbCozNPQSvZkbyMfM","block_height":92615931,"error":"wasm execution failed with error: HostError(GasLimitExceeded)","logs":[]},"id":"dontcare"}

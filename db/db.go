@@ -112,7 +112,7 @@ type BalanceAsset struct {
 	Asset              string    `pg:"asset"`
 }
 
-func GetBalancesByDate(date time.Time) ([]map[string]interface{}, error) {
+func GetBalancesByDate(date time.Time) ([]BalanceAsset, error) {
 
 	q := `
 	SELECT b.*, a.Address, a.Network, a.SignificantDigits, a.Asset
@@ -130,6 +130,5 @@ func GetBalancesByDate(date time.Time) ([]map[string]interface{}, error) {
 		return nil, err
 	}
 
-	fmt.Println(results[0].Address)
-	return nil, nil
+	return results, nil
 }

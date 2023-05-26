@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"time"
+	"net/http"
 	"unit410/db"
-	"unit410/middleware"
+	"unit410/router"
 )
 
 var chains = []string{
@@ -24,27 +24,33 @@ func main() {
 		fmt.Println("error creating balances table: ", err.Error())
 	}
 
-	err = middleware.GetBalances(chains)
+	r := router.Router()
+	err = http.ListenAndServe(":9000", r)
 	if err != nil {
-		fmt.Println("error getting balances: ", err.Error())
+		fmt.Println("Error establishing connection:", err)
 	}
-	now := time.Now()
-	startOfToday := time.Date(now.Year(), now.Month(), now.Day()-2, 0, 0, 0, 0, now.Location())
-	fmt.Println(db.GetBalancesByDate(startOfToday))
 
-	// Create a ticker that ticks every 24 hours
-	ticker := time.NewTicker(24 * time.Hour)
+	// err = middleware.GetBalances(chains)
+	// if err != nil {
+	// 	fmt.Println("error getting balances: ", err.Error())
+	// }
+	// now := time.Now()
+	// startOfToday := time.Date(now.Year(), now.Month(), now.Day()-2, 0, 0, 0, 0, now.Location())
+	// fmt.Println(db.GetBalancesByDate(startOfToday))
 
-	// Start a goroutine to execute at midnight
-	go func() {
-		durationUntilMidnight := time.Until(time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day()+1, 0, 0, 0, 0, time.Now().Location()))
-		<-time.After(durationUntilMidnight)
+	// // Create a ticker that ticks every 24 hours
+	// ticker := time.NewTicker(24 * time.Hour)
 
-		middleware.GetBalances(chains)
-		for range ticker.C {
-			middleware.GetBalances(chains)
-		}
-	}()
+	// // Start a goroutine to execute at midnight
+	// go func() {
+	// 	durationUntilMidnight := time.Until(time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day()+1, 0, 0, 0, 0, time.Now().Location()))
+	// 	<-time.After(durationUntilMidnight)
 
-	select {}
+	// 	middleware.GetBalances(chains)
+	// 	for range ticker.C {
+	// 		middleware.GetBalances(chains)
+	// 	}
+	// }()
+
+	// select {}
 }
