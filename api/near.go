@@ -13,7 +13,7 @@ import (
 type NearAPI struct {
 }
 
-func (api *NearAPI) GetData() ([]*models.Bal, error) {
+func (api *NearAPI) GetData() error {
 	stakedBalances, _ := obtainValidatorAddresses()
 	for i, sb := range stakedBalances {
 		b, err := getAccountBalance(sb.Address)
@@ -27,14 +27,14 @@ func (api *NearAPI) GetData() ([]*models.Bal, error) {
 		fmt.Println(" ", b)
 		if err != nil {
 			fmt.Println(err.Error())
-			return nil, err
+			return err
 		}
 		stakedBalances[i].Balance = b.Result.Amount
 		db.AddBalance("NEAR", *stakedBalances[i])
 	}
 	fmt.Println(len(stakedBalances))
 
-	return stakedBalances, nil
+	return nil
 }
 
 type Account struct {

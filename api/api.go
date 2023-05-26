@@ -11,7 +11,7 @@ import (
 )
 
 type API interface {
-	GetData() ([]*models.Bal, error)
+	GetData() error
 }
 
 func HttpRequest[T models.Test](method, URL string, requestBody interface{}) (*T, error) {
@@ -43,12 +43,10 @@ func HttpRequest[T models.Test](method, URL string, requestBody interface{}) (*T
 	resp, err := client.Do(req)
 	for resp.StatusCode == 429 {
 		time.Sleep(5 * time.Second)
-		fmt.Println("ERROR 1: 429")
 		resp, err = client.Do(req)
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println(resp.StatusCode)
 	}
 	if err != nil {
 		return nil, err

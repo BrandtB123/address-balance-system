@@ -1,12 +1,14 @@
 package api
 
 import (
-	"fmt"
 	"unit410/db"
 	"unit410/models"
 )
 
 type AudiusAPI struct{}
+
+var audius = "0x18aAA7115705e8be94bfFEBDE57Af9BFc265B998"
+var apiKey = "IQUJGKFGQSEUQMB8EKB8II6YTSY22ATSA3"
 
 var addresses = []string{
 	"0x28c6c06298d514db089934071355e5743bf21d60",
@@ -132,33 +134,29 @@ var addresses = []string{
 	"0x6bed4c5c1ed1d4ea47f79df5c111d7e9f56a122e",
 	"0x30f5608b4ad36bd439916cfc5fe16b012a58a5e5"}
 
-func (api *AudiusAPI) GetData() ([]*models.Bal, error) {
-	var output []*models.Bal
-	for i, a := range addresses {
-		fmt.Printf("%v: ", i)
-		b, _ := getBalance2(a)
-		fmt.Println(b)
-		output = append(output, b)
+func (api *AudiusAPI) GetData() error {
+	for _, addr := range addresses {
+		balance, _ := getAudiusBalance(addr)
 		db.AddAddress(models.Address{
-			Address:           a,
+			Address:           addr,
 			Network:           "eth",
 			SignificantDigits: 9,
-			Asset:             "0x18aAA7115705e8be94bfFEBDE57Af9BFc265B998",
+			Asset:             audius,
 		})
-		db.AddBalance("0x18aAA7115705e8be94bfFEBDE57Af9BFc265B998", *b)
+		db.AddBalance(audius, *balance)
 
 	}
-	return output, nil
+	return nil
 }
 
-func getBalance2(address string) (*models.Bal, error) {
-	a, _ := HttpRequest[models.AudiusResponse]("GET", "https://api.etherscan.io/api?module=account&action=tokenbalance&contractaddress=0x18aAA7115705e8be94bfFEBDE57Af9BFc265B998&address="+address+"&tag=latest&apikey=IQUJGKFGQSEUQMB8EKB8II6YTSY22ATSA3", nil)
-	for a != nil && a.Status != "1" {
-		a, _ = HttpRequest[models.AudiusResponse]("GET", "https://api.etherscan.io/api?module=account&action=tokenbalance&contractaddress=0x18aAA7115705e8be94bfFEBDE57Af9BFc265B998&address="+address+"&tag=latest&apikey=IQUJGKFGQSEUQMB8EKB8II6YTSY22ATSA3", nil)
+func getAudiusBalance(address string) (*models.Bal, error) {
+	audiusResponse, _ := HttpRequest[models.AudiusResponse]("GET", "https://api.etherscan.io/api?module=account&action=tokenbalance&contractaddress="+audius+"&address="+address+"&tag=latest&apikey="+apiKey, nil)
+	for audiusResponse != nil && audiusResponse.Status != "1" {
+		audiusResponse, _ = HttpRequest[models.AudiusResponse]("GET", "https://api.etherscan.io/api?module=account&action=tokenbalance&contractaddress="+audius+"&address="+address+"&tag=latest&apikey="+apiKey, nil)
 	}
 	balance := models.Bal{
 		Address: address,
-		Balance: a.Result,
+		Balance: audiusResponse.Result,
 	}
 
 	return &balance, nil

@@ -4,7 +4,6 @@ import "time"
 
 type Bal struct {
 	Address            string
-	Timestamp          time.Time
 	Balance            string
 	Available          string
 	DelegatableVesting string

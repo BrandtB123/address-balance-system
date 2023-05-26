@@ -3,6 +3,7 @@ package db
 import (
 	"fmt"
 	"strconv"
+	"time"
 	"unit410/models"
 
 	"github.com/go-pg/pg"
@@ -44,7 +45,7 @@ func CreateBalancesTable() error {
 	query := `
 		CREATE TABLE IF NOT EXISTS Balances (
 			UUID    UUID REFERENCES Addresses(UUID),
-			Timestamp          TIMESTAMP,
+			Timestamp          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 			Balance            TEXT,
 			Available          TEXT,
 			DelegatableVesting TEXT,
@@ -82,12 +83,10 @@ func AddAddress(address models.Address) error {
 
 func AddBalance(asset string, balance models.Bal) error {
 	query := `
-		INSERT INTO Balances (UUID, Timestamp, Balance, Available, DelegatableVesting, Delegated, Staking, Unbonding, Reward)
-		VALUES ((SELECT UUID FROM Addresses WHERE Address = '%s' AND Asset = '%s'), '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')
+		INSERT INTO Balances (UUID, Balance, Available, DelegatableVesting, Delegated, Staking, Unbonding, Reward)
+		VALUES ((SELECT UUID FROM Addresses WHERE Address = '%s' AND Asset = '%s'), '%s', '%s', '%s', '%s', '%s', '%s', '%s')
 	`
-	s := balance.Timestamp.Format("2006-01-02 15:04:05")
-
-	q := fmt.Sprintf(query, balance.Address, asset, s, balance.Balance, balance.Available, balance.DelegatableVesting, balance.Delegated, balance.Staking, balance.Unbonding, balance.Reward)
+	q := fmt.Sprintf(query, balance.Address, asset, balance.Balance, balance.Available, balance.DelegatableVesting, balance.Delegated, balance.Staking, balance.Unbonding, balance.Reward)
 
 	_, err := DB.Exec(q)
 	if err != nil {
@@ -97,81 +96,40 @@ func AddBalance(asset string, balance models.Bal) error {
 	return nil
 }
 
-// func SaveBlockData(balance models.Bal) error {
-// 	_, err := DB.Model(&block).OnConflict("(height) DO UPDATE").Set("tx_count = ?tx_count").Insert()
-// 	if err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }
+type BalanceAsset struct {
+	UUID               string    `pg:"uuid"`
+	Timestamp          time.Time `pg:"timestamp"`
+	Balance            string    `pg:"balance"`
+	Available          string    `pg:"available"`
+	Delegatablevesting string    `pg:"delegatablevesting"`
+	Delegated          string    `pg:"delegated"`
+	Staking            string    `pg:"staking"`
+	Unbonding          string    `pg:"unbonding"`
+	Reward             string    `pg:"reward"`
+	Address            string    `pg:"address"`
+	Network            string    `pg:"network"`
+	Significantdigits  int       `pg:"significantdigits"`
+	Asset              string    `pg:"asset"`
+}
 
-// func GetLatestHeight() (int64, error) {
-// 	var block Block
-// 	err := DB.Model(&block).Order("height DESC").Limit(1).Select()
-// 	if err != nil {
-// 		return 0, fmt.Errorf("failed to retrieve the latest block height: %v", err)
-// 	}
+func GetBalancesByDate(date time.Time) ([]map[string]interface{}, error) {
 
-// 	return block.Height, nil
-// }
+	q := `
+	SELECT b.*, a.Address, a.Network, a.SignificantDigits, a.Asset
+	FROM Balances b
+	JOIN Addresses a ON b.UUID = a.UUID
+	WHERE DATE(b.Timestamp) > '%s'`
 
-// func GetTransactionsInPastNBlocks(n int) (int, error) {
-// 	var block Block
-// 	var totalTxs int
-// 	err := DB.Model(&block).ColumnExpr("SUM(tx_count)").Limit(n).Select(&totalTxs)
-// 	if err != nil {
-// 		return 0, err
-// 	}
+	q = fmt.Sprintf(q, date.Format("2006-01-02"))
 
-// 	return totalTxs, nil
-// }
+	var results []BalanceAsset
 
-// func GetProposedBlocksByValidator(proposer string) ([]int64, error) {
-// 	var heights []int64
-// 	_, err := DB.Query(&heights, `
-// 		SELECT height
-// 		FROM blocks
-// 		WHERE proposer = ?
-// 	`, proposer)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return heights, nil
-// }
+	_, err := DB.Query(&results, q)
+	if err != nil {
+		fmt.Printf("Error executing query: %v\n", err)
+		return nil, err
+	}
 
-// func GetTopNPeersByScore(n int) ([]PeerScore, error) {
-// 	var blocks []Block
-// 	err := DB.Model(&blocks).
-// 		Order("height DESC").
-// 		Limit(n).
-// 		Select()
-
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	peers := make(map[string]int)
-// 	for _, block := range blocks {
-// 		for _, score := range block.Peers {
-// 			peers[score.Address] += score.Score
-// 		}
-// 	}
-
-// 	var topPeers []PeerScore
-
-// 	for address, score := range peers {
-// 		topPeers = append(topPeers, PeerScore{
-// 			Address: address,
-// 			Score:   score,
-// 		})
-// 	}
-
-// 	sort.Slice(topPeers, func(i, j int) bool {
-// 		return topPeers[i].Score > topPeers[j].Score
-// 	})
-
-// 	if len(topPeers) > n {
-// 		topPeers = topPeers[:n]
-// 	}
-// 	return topPeers, nil
-// }
+	fmt.Println(results[0].Address)
+	return nil, nil
+}
