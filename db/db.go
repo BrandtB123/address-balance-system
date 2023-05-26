@@ -52,7 +52,8 @@ func CreateBalancesTable() error {
 			Delegated          TEXT,
 			Staking            TEXT,
 			Unbonding          TEXT,
-			Reward             TEXT
+			Reward             TEXT,
+			Latest             BOOLEAN DEFAULT TRUE
 		)
 	`
 
@@ -72,7 +73,6 @@ func AddAddress(address models.Address) error {
 	`
 	q := fmt.Sprintf(query, address.Address, address.Network, strconv.Itoa(address.SignificantDigits), address.Asset)
 
-	fmt.Println(q)
 	_, err := DB.Exec(q)
 	if err != nil {
 		return fmt.Errorf("failed to add address: %v", err)
@@ -82,13 +82,26 @@ func AddAddress(address models.Address) error {
 }
 
 func AddBalance(asset string, balance models.Bal) error {
+
+	updateQuery := `
+		UPDATE Balances
+		SET Latest = FALSE
+		WHERE UUID = (SELECT UUID FROM Addresses WHERE Address = '%s' AND Asset = '%s')
+	`
+	updateQ := fmt.Sprintf(updateQuery, balance.Address, asset)
+	fmt.Print(updateQ)
+	_, err := DB.Exec(updateQ)
+	if err != nil {
+		return fmt.Errorf("failed to update previous entries: %v", err)
+	}
+
 	query := `
 		INSERT INTO Balances (UUID, Balance, Available, DelegatableVesting, Delegated, Staking, Unbonding, Reward)
 		VALUES ((SELECT UUID FROM Addresses WHERE Address = '%s' AND Asset = '%s'), '%s', '%s', '%s', '%s', '%s', '%s', '%s')
 	`
 	q := fmt.Sprintf(query, balance.Address, asset, balance.Balance, balance.Available, balance.DelegatableVesting, balance.Delegated, balance.Staking, balance.Unbonding, balance.Reward)
 
-	_, err := DB.Exec(q)
+	_, err = DB.Exec(q)
 	if err != nil {
 		return fmt.Errorf("failed to add balance: %v", err)
 	}
@@ -110,18 +123,64 @@ type BalanceAsset struct {
 	Network            string    `pg:"network"`
 	Significantdigits  int       `pg:"significantdigits"`
 	Asset              string    `pg:"asset"`
+	Latest             bool      `pg:"latest"`
 }
 
 func GetBalancesByDate(date time.Time) ([]BalanceAsset, error) {
 
 	q := `
-	SELECT b.*, a.Address, a.Network, a.SignificantDigits, a.Asset
-	FROM Balances b
-	JOIN Addresses a ON b.UUID = a.UUID
-	WHERE DATE(b.Timestamp) > '%s'`
+		SELECT b.*, a.Address, a.Network, a.SignificantDigits, a.Asset
+		FROM Balances b
+		JOIN Addresses a ON b.UUID = a.UUID
+		WHERE DATE(b.Timestamp) > '%s' AND b.Latest = TRUE
+	`
 
 	q = fmt.Sprintf(q, date.Format("2006-01-02"))
 
+	var results []BalanceAsset
+
+	_, err := DB.Query(&results, q)
+	if err != nil {
+		fmt.Printf("Error executing query: %v\n", err)
+		return nil, err
+	}
+
+	return results, nil
+}
+
+func GetBalancesByDateAndAsset(asset string, date time.Time) ([]BalanceAsset, error) {
+
+	q := `
+		SELECT b.*, a.Address, a.Network, a.SignificantDigits, a.Asset
+		FROM Balances b
+		JOIN Addresses a ON b.UUID = a.UUID
+		WHERE DATE(b.Timestamp) > '%s' and a.Asset = '%s' AND b.Latest = TRUE
+	`
+
+	q = fmt.Sprintf(q, date.Format("2006-01-02"), asset)
+	fmt.Println(q)
+	var results []BalanceAsset
+
+	_, err := DB.Query(&results, q)
+	if err != nil {
+		fmt.Printf("Error executing query: %v\n", err)
+		return nil, err
+	}
+
+	return results, nil
+}
+
+func GetBalancesByDateAndAddress(address string, date time.Time) ([]BalanceAsset, error) {
+
+	q := `
+		SELECT b.*, a.Address, a.Network, a.SignificantDigits, a.Asset
+		FROM Balances b
+		JOIN Addresses a ON b.UUID = a.UUID
+		WHERE DATE(b.Timestamp) > '%s' and a.Address = '%s' AND b.Latest = TRUE
+	`
+
+	q = fmt.Sprintf(q, date.Format("2006-01-02"), address)
+	fmt.Println(q)
 	var results []BalanceAsset
 
 	_, err := DB.Query(&results, q)

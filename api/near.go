@@ -19,21 +19,17 @@ func (api *NearAPI) GetData() error {
 		b, err := getAccountBalance(sb.Address)
 		db.AddAddress(models.Address{
 			Address:           sb.Address,
-			SignificantDigits: 112,
-			Network:           "NEAR",
-			Asset:             "NEAR",
+			SignificantDigits: 18,
+			Network:           "near",
+			Asset:             "near",
 		})
-		fmt.Print(i)
-		fmt.Println(" ", b)
 		if err != nil {
 			fmt.Println(err.Error())
 			return err
 		}
 		stakedBalances[i].Balance = b.Result.Amount
-		db.AddBalance("NEAR", *stakedBalances[i])
+		db.AddBalance("near", *stakedBalances[i])
 	}
-	fmt.Println(len(stakedBalances))
-
 	return nil
 }
 
@@ -75,9 +71,9 @@ func JSONToBase64(jsonData map[string]interface{}) (string, error) {
 
 func obtainValidatorAddresses() ([]*models.Bal, error) {
 	fromIndex := 0
-	limit := 50
-	increment := 50
-	toIndex := 100
+	limit := 10
+	increment := 10
+	toIndex := 20
 
 	jsonData := map[string]interface{}{
 		"from_index": fromIndex,

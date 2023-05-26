@@ -9,9 +9,16 @@ import (
 
 type OsmosisAPI struct{}
 
+var osmosisAddresses = []string{
+	"osmo15ujzuqf7594x7wqssgqv0tcrmjccyhwy9wuyw0",
+	"osmo1x0l3jhq4k0uv0qwatvzk97ktmk5uewclnzsfpl",
+	"osmo1npfl4vmmmf4yqhcemz95mvqujgdnlhrlxfzhlhz2gru8g2t749xqr9zm5e",
+	"osmo1exeej95hmmzavtzsjnrgpkhrj0cvp72lvl9qf5",
+	"osmo1qvsus5qg8yhre7k2c78xkkw4nvqqgev7dvylaj",
+}
+
 func (api *OsmosisAPI) GetData() error {
-	address := "osmo1gy0nyn2hscxxayj2pdyu8axmfvv75nnvd08ajh"
-	for range [10]int{} {
+	for _, address := range osmosisAddresses {
 		err := getOsmosisBalance(address)
 		if err != nil {
 			return err
